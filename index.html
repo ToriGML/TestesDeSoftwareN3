@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Game CRUD</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+      background: #f4f4f4;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    form {
+      margin-bottom: 2rem;
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    input, button {
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      width: 100%;
+    }
+
+    .game {
+      background: white;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-left: 4px solid #3498db;
+      border-radius: 4px;
+    }
+
+    .actions {
+      margin-top: 0.5rem;
+    }
+
+    .actions button {
+      width: auto;
+      margin-right: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Game CRUD</h1>
+
+  <form id="gameForm">
+    <input type="hidden" id="gameId">
+    <input type="text" id="title" placeholder="Título" required>
+    <input type="text" id="genre" placeholder="Gênero" required>
+    <input type="number" id="year" placeholder="Ano de lançamento" required>
+    <button type="submit">Salvar Jogo</button>
+  </form>
+
+  <div id="gameList"></div>
+
+  <script>
+    const API_URL = "http://localhost:8000/games";
+
+    async function fetchGames() {
+      const res = await fetch(API_URL);
+      const games = await res.json();
+      const list = document.getElementById("gameList");
+      list.innerHTML = "";
+      games.forEach(game => {
+        const div = document.createElement("div");
+        div.className = "game";
+        div.innerHTML = `
+          <strong>${game.title}</strong> (${game.year})<br>
+          Gênero: ${game.genre}
+          <div class="actions">
+            <button onclick="editGame('${game.id}')">Editar</button>
+            <button onclick="deleteGame('${game.id}')">Deletar</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    async function createGame(data) {
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      await fetchGames();
+    }
+
+    async function updateGame(id, data) {
+      await fetch(`${API_URL}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      await fetchGames();
+    }
+
+    async function deleteGame(id) {
+      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      await fetchGames();
+    }
+
+    async function editGame(id) {
+      const res = await fetch(`${API_URL}/${id}`);
+      const game = await res.json();
+      document.getElementById("gameId").value = game.id;
+      document.getElementById("title").value = game.title;
+      document.getElementById("genre").value = game.genre;
+      document.getElementById("year").value = game.year;
+    }
+
+    document.getElementById("gameForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("gameId").value;
+      const data = {
+        title: document.getElementById("title").value,
+        genre: document.getElementById("genre").value,
+        year: parseInt(document.getElementById("year").value)
+      };
+      if (id) {
+        await updateGame(id, data);
+      } else {
+        await createGame(data);
+      }
+      document.getElementById("gameForm").reset();
+    });
+
+    fetchGames();
+  </script>
+</body>
+</html>
